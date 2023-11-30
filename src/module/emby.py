@@ -17,6 +17,7 @@ with open(os.path.join(root_dir, 'config', 'config.yaml'), 'r') as config:
     cfg = yaml.safe_load(config)
     host_name = cfg['emby']['host']
     api_key = cfg['emby']['apikey']
+    base_usr = cfg['emby']['user']
 
 json_headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.89 Safari/537.36',
@@ -151,7 +152,7 @@ def get_media_details(mediaId, userId):
         mediaDetails['CustomRating'] = jvData['CustomRating'] if 'CustomRating' in jvData else '' # 自定义分级 
         # 添加 {'Name':'伊峥', 'Role': None, 'Type': 'Director'} # Director 导演 , Actor 演员， GuestStar 特邀明星, Producer 纸片人,  Writer 编剧 
         mediaDetails['People'] = jvData['People'] if 'People' in jvData else [] # 人物列表 [{"Name":"Steven Zhang","Id":"904","Type":"Actor"}]
-        mediaDetails['LockData'] = jvData['LockData'] if 'LockData' in jvData else True # 锁定此项目以防止被改动 
+        mediaDetails['LockData'] = jvData['LockData'] if 'LockData' in jvData else False # 锁定此项目以防止被改动 
         mediaDetails['LockedFields'] = jvData['LockedFields'] if 'LockedFields' in jvData else ["Name","OriginalTitle","SortName","CommunityRating","CriticRating","Tagline","Overview","OfficialRating","Genres","Studios","Tags"] # 锁定项目列表 
         mediaDetails['ProviderIds'] = jvData['ProviderIds'] if 'ProviderIds' in jvData else {'DoubanID':'','Imdb':'','Tmdb':'','Tvdb':'','Zap2It':''} # 外部Ids列表  
         mediaDetails['PreferredMetadataLanguage'] = jvData['PreferredMetadataLanguage'] if 'PreferredMetadataLanguage' in jvData else 'zh-CN' # 首选元数据下载语言 
@@ -169,6 +170,9 @@ def get_media_details(mediaId, userId):
 
 
 def set_media_details(mediaId, jsonStr):
+    '''
+    设置影片详细信息 
+    '''
     req_url = '{0}/emby/Items/{1}?reqformat=json&api_key={2}'.format(host_name, mediaId, api_key)
     ret_data = post_html(url=req_url, data=jsonStr.encode("utf-8").decode("latin1"), retry=1, headers=json_headers)
     if ret_data == '':
@@ -178,6 +182,9 @@ def set_media_details(mediaId, jsonStr):
 
 
 def get_media_images(mediaId):
+    '''
+    获取当前影视/影人已经设置的图片类型列表 
+    '''
     imageList = []
     req_url = '{0}/emby/Items/{1}/Images?api_key={2}'.format(host_name, mediaId, api_key)
     jsonStr = get_html(req_url)
@@ -189,6 +196,10 @@ def get_media_images(mediaId):
 
 
 def set_media_image(mediaId, imageType, filePath):
+    '''
+    上传影视/影人图片 
+    imageType 取值: Primary(封面图)/ Banner(横幅)/ Logo(标识)/ Thumb(缩略图)/ Disc(光盘)/ Art(艺术图)/Backdrop(背景图) 
+    '''
     if not os.path.exists(filePath):
         return False
     image_data = None
@@ -214,15 +225,82 @@ def get_premiere_key():
     return get_html(req_url)
 
 
-if __name__=="__main__":
-    print(get_premiere_key())
-    exit(0)
+def get_field_role(userId, roleId):
+    '''
+    获取 影人 的详细资料 
+    '''
+    fieldRole = {}
+    req_url = '{0}/emby/Users/{1}/Items/{2}?Fields=ChannelMappingInfo&api_key={3}'.format(host_name, userId, roleId, api_key)
+    jsonStr = get_html(req_url)
+    if jsonStr:
+        jvData = json.loads(jsonStr)
+        fieldRole['Id'] = jvData['Id'] if 'Id' in jvData else '' # 
+        fieldRole['Name'] = jvData['Name'] if 'Name' in jvData else '' # 标题 
+        fieldRole['ChannelNumber'] = ''
+        fieldRole['OriginalTitle'] = ''
+        fieldRole['ForcedSortName'] = jvData['ForcedSortName'] if 'ForcedSortName' in jvData else '' # 类标题 
+        fieldRole['SortName'] = jvData['SortName'] if 'SortName' in jvData else '' # 类标题 
+        fieldRole['CommunityRating'] = ''
+        fieldRole['CriticRating'] = ''
+        fieldRole['IndexNumber'] = None
+        fieldRole['ParentIndexNumber'] = None
+        fieldRole['SortParentIndexNumber'] = ''
+        fieldRole['SortIndexNumber'] = ''
+        fieldRole['DisplayOrder'] = ''
+        fieldRole['Album'] = ''
+        fieldRole['AlbumArtists'] = []
+        fieldRole['ArtistItems'] = []
+        fieldRole['Overview'] = jvData['Overview'] if 'Overview' in jvData else '' # 描述信息
+        fieldRole['Status'] = '' 
+        fieldRole['Genres'] = [] 
+        fieldRole['Tags'] = []  # 标签 
+        fieldRole['TagItems'] = []  # 标签 
+        for item in jvData['TagItems']:
+            fieldRole['TagItems'].append({'Name': item['Name']})
+            fieldRole['Tags'].append(item['Name'])
+        fieldRole['Studios'] = [] 
+        fieldRole['PremiereDate'] = jvData['PremiereDate'] if 'PremiereDate' in jvData else '' # 出生日期 '1885-12-30T15:55:00.000Z' 
+        fieldRole['DateCreated'] = jvData['DateCreated'] if 'DateCreated' in jvData else '' # 加入时间(加入资料库时间) 
+        fieldRole['EndDate'] = jvData['EndDate'] if 'EndDate' in jvData else '' # 去世时间 
+        fieldRole['ProductionYear'] = ''
+        fieldRole['Video3DFormat'] = ''
+        fieldRole['OfficialRating'] = ''
+        fieldRole['CustomRating'] = '' 
+        fieldRole['LockData'] = jvData['LockData'] if 'LockData' in jvData else False # 锁定此项目以防止被修改 
+        fieldRole['LockedFields'] = jvData['LockedFields'] if 'LockedFields' in jvData else ["Name", "SortName", "Overview", "Tags"] # 锁定项目列表 
+        fieldRole['ProviderIds'] = jvData['ProviderIds'] if 'ProviderIds' in jvData else {'Imdb':'','Tmdb':'','Tvdb':''} # 外部ids(Imdb / Tmdb / Tvdb) 
+        fieldRole['PreferredMetadataLanguage'] = jvData['PreferredMetadataLanguage'] if 'PreferredMetadataLanguage' in jvData else 'zh-CN' # 首选元数据下载语言 
+        fieldRole['PreferredMetadataCountryCode'] = jvData['PreferredMetadataCountryCode'] if 'PreferredMetadataCountryCode' in jvData else 'CN' # 国家 
+        fieldRole['ProductionLocations'] = jvData['ProductionLocations'] if 'ProductionLocations' in jvData else [] # 出生地 
+        fieldRole['Taglines'] = []
+    return fieldRole
 
+
+def set_field_role(roleId, jsonStr):
+    '''
+    设置影人详细信息 
+    '''
+    req_url = '{0}/emby/Items/{1}?reqformat=json&api_key={2}'.format(host_name, roleId, api_key)
+    ret_data = post_html(url=req_url, data=jsonStr.encode("utf-8").decode("latin1"), retry=1, headers=json_headers)
+    if ret_data == '':
+        return True
+    if ret_data == None:
+        return False
+
+
+if __name__=="__main__":
     root_id = ''
     # 获取指定用户的id 
     for user in get_users():
-        if user['name'] == 'root':
+        if user['name'] == base_usr:
             root_id = user['id']
+
+    # 影人数据 
+    fieldRole = get_field_role(root_id, 904)
+    fieldRole['Overview'] = '新的表述信息'
+    set_field_role(904, json.dumps(fieldRole, ensure_ascii=False))
+    exit(0)
+
     # 遍历媒体库 
     for item in get_media_library(root_id):
         # 遍历影片 
