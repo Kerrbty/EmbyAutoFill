@@ -12,12 +12,18 @@ root_dir = os.path.abspath(os.path.join(cur_dir, '..'))
 sys.path.append(root_dir)
 from module.comm import logger, get_html, post_html, get_content
 
+#####################################################
+# 全局数据区 
+#####################################################
+
 # 读emby配置 
+__base_user_id__ = None
 with open(os.path.join(root_dir, 'config', 'config.yaml'), 'r') as config:
-    cfg = yaml.safe_load(config)
-    host_name = cfg['emby']['host']
-    api_key = cfg['emby']['apikey']
-    base_usr = cfg['emby']['user']
+    __emby_cfg__ = yaml.safe_load(config)
+    __host_name__ = __emby_cfg__['emby']['host']
+    __api_key__ = __emby_cfg__['emby']['apikey']
+    __base_user_name__ = __emby_cfg__['emby']['user']
+
 
 json_headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.89 Safari/537.36',
@@ -36,28 +42,39 @@ def get_users():
     获取所有用户 
     """
     userList = []
-    req_url = '{0}/Users?api_key={1}'.format(host_name, api_key)
+    req_url = '{0}/Users?api_key={1}'.format(__host_name__, __api_key__)
     jsonStr = get_html(req_url)
     if jsonStr:
         jvData = json.loads(jsonStr)
         for jvUser in jvData:
             userInfo = {}
-            userInfo['name'] = jvUser['Name']
-            userInfo['id'] = jvUser['Id']
-            userInfo['admin'] = jvUser['Policy']['IsAdministrator']
+            userInfo['Name'] = jvUser['Name']
+            userInfo['Id'] = jvUser['Id']
+            userInfo['Admin'] = jvUser['Policy']['IsAdministrator']
             userList.append(userInfo)
     return userList
 
 
-def get_media_library(userId = None):
+def __get_userId__():
+    global __base_user_id__
+    if __base_user_id__:
+        return __base_user_id__
+    else:
+        for user in get_users():
+            if user['Name'] == __base_user_name__:
+                __base_user_id__ = user['Id']
+    return __base_user_id__
+
+def get_media_library():
     """
     获取指定用户的所有媒体库 
     """
     LibraryList = []
+    userId = __get_userId__()
     if userId:
-        req_url = '{0}/emby/Users/{1}/Items?api_key={2}'.format(host_name, userId, api_key)
+        req_url = '{0}/emby/Users/{1}/Items?api_key={2}'.format(__host_name__, userId, __api_key__)
     else:
-        req_url = '{0}/emby/Items?api_key={1}'.format(host_name, api_key)
+        req_url = '{0}/emby/Items?api_key={1}'.format(__host_name__, __api_key__)
     jsonStr = get_html(req_url)
     if jsonStr:
         jvData = json.loads(jsonStr)
@@ -67,8 +84,8 @@ def get_media_library(userId = None):
                 continue
             # 其他媒体库 
             mediaInfo = {}
-            mediaInfo['name'] = jvItem['Name']
-            mediaInfo['id'] = jvItem['Id']
+            mediaInfo['Name'] = jvItem['Name']
+            mediaInfo['Id'] = jvItem['Id']
             if 'CollectionType' in jvItem and jvItem['CollectionType'] == 'movies':
                 mediaInfo['movie'] = True
             else:
@@ -77,18 +94,19 @@ def get_media_library(userId = None):
     return LibraryList
 
 
-def get_media_items(libraryId, userId = None):
+def get_media_items(libraryId):
     """
     获取媒体库里面所有影片 
     """
     mediaList = []
     nIndex = 0
+    userId = __get_userId__()
     while True:
         # 不同参数访问不同的列表 
         if userId:
-            req_url = '{0}/emby/Items?ParentId={2}&SortBy=SortName&StartIndex={3}&Limit=50&api_key={4}'.format(host_name, userId, libraryId, nIndex, api_key)
+            req_url = '{0}/emby/Items?ParentId={2}&SortBy=SortName&StartIndex={3}&Limit=50&api_key={4}'.format(__host_name__, userId, libraryId, nIndex, __api_key__)
         else:
-            req_url = '{0}/emby/Users/{1}/Items?ParentId={2}&SortBy=SortName&StartIndex={3}&Limit=50&api_key={4}'.format(host_name, userId, libraryId, nIndex, api_key)
+            req_url = '{0}/emby/Users/{1}/Items?ParentId={2}&SortBy=SortName&StartIndex={3}&Limit=50&api_key={4}'.format(__host_name__, userId, libraryId, nIndex, __api_key__)
         # 获取到json数据 
         jsonStr = get_html(req_url)
         if not jsonStr:
@@ -96,8 +114,8 @@ def get_media_items(libraryId, userId = None):
         jvData = json.loads(jsonStr)
         for item in jvData['Items']:
             mediaInfo = {}
-            mediaInfo['name'] = item['Name']
-            mediaInfo['id'] = item['Id']
+            mediaInfo['Name'] = item['Name']
+            mediaInfo['Id'] = item['Id']
             mediaList.append(mediaInfo)
         # 没满50个,说明已经到尾了 
         if jvData['TotalRecordCount'] < 50:
@@ -106,12 +124,13 @@ def get_media_items(libraryId, userId = None):
     return mediaList
 
 
-def get_media_details(mediaId, userId):
+def get_media_details(mediaId):
     """
     获取影片已经设置的信息  
     """
     mediaDetails = {}
-    req_url = '{0}/emby/Users/{1}/Items/{2}?api_key={3}'.format(host_name, userId, mediaId, api_key)
+    userId = __get_userId__()
+    req_url = '{0}/emby/Users/{1}/Items/{2}?api_key={3}'.format(__host_name__, userId, mediaId, __api_key__)
     jsonStr = get_html(req_url)
     if jsonStr:
         jvData = json.loads(jsonStr)
@@ -173,7 +192,7 @@ def set_media_details(mediaId, jsonStr):
     '''
     设置影片详细信息 
     '''
-    req_url = '{0}/emby/Items/{1}?reqformat=json&api_key={2}'.format(host_name, mediaId, api_key)
+    req_url = '{0}/emby/Items/{1}?reqformat=json&api_key={2}'.format(__host_name__, mediaId, __api_key__)
     ret_data = post_html(url=req_url, data=jsonStr.encode("utf-8").decode("latin1"), retry=1, headers=json_headers)
     if ret_data == '':
         return True
@@ -187,7 +206,7 @@ def get_item_images(itemId):
     itemId 为 mediaId 或者 roleId
     '''
     imageList = []
-    req_url = '{0}/emby/Items/{1}/Images?api_key={2}'.format(host_name, itemId, api_key)
+    req_url = '{0}/emby/Items/{1}/Images?api_key={2}'.format(__host_name__, itemId, __api_key__)
     jsonStr = get_html(req_url)
     if jsonStr:
         jvData = json.loads(jsonStr)
@@ -211,7 +230,7 @@ def set_item_image(itemId, imageType, filePath):
         return False
     image_b64 = base64.b64encode(image_data)
     # 上传图片 
-    req_url = '{0}/emby/Items/{1}/Images/{2}?api_key={3}'.format(host_name, itemId, imageType, api_key)
+    req_url = '{0}/emby/Items/{1}/Images/{2}?api_key={3}'.format(__host_name__, itemId, imageType, __api_key__)
     ret_data = post_html(url=req_url, data=image_b64, retry=1, headers=image_headers)
     if ret_data == '':
         return True
@@ -223,16 +242,17 @@ def get_premiere_key():
     '''
     获取 Emby Premiere 秘钥 
     '''
-    req_url = '{0}/emby/Plugins/SecurityInfo?api_key={1}'.format(host_name, api_key)
+    req_url = '{0}/emby/Plugins/SecurityInfo?api_key={1}'.format(__host_name__, __api_key__)
     return get_html(req_url)
 
 
-def get_field_role(userId, roleId):
+def get_field_role(roleId):
     '''
     获取 影人 的详细资料 
     '''
     fieldRole = {}
-    req_url = '{0}/emby/Users/{1}/Items/{2}?Fields=ChannelMappingInfo&api_key={3}'.format(host_name, userId, roleId, api_key)
+    userId = __get_userId__()
+    req_url = '{0}/emby/Users/{1}/Items/{2}?Fields=ChannelMappingInfo&api_key={3}'.format(__host_name__, userId, roleId, __api_key__)
     jsonStr = get_html(req_url)
     if jsonStr:
         jvData = json.loads(jsonStr)
@@ -282,7 +302,7 @@ def set_field_role(roleId, jsonStr):
     '''
     设置影人详细信息 
     '''
-    req_url = '{0}/emby/Items/{1}?reqformat=json&api_key={2}'.format(host_name, roleId, api_key)
+    req_url = '{0}/emby/Items/{1}?reqformat=json&api_key={2}'.format(__host_name__, roleId, __api_key__)
     ret_data = post_html(url=req_url, data=jsonStr.encode("utf-8").decode("latin1"), retry=1, headers=json_headers)
     if ret_data == '':
         return True
@@ -291,39 +311,50 @@ def set_field_role(roleId, jsonStr):
 
 
 if __name__=="__main__":
-    root_id = ''
-    # 获取指定用户的id 
-    for user in get_users():
-        if user['name'] == base_usr:
-            root_id = user['id']
+    root_id = __get_userId__()
+    logger(__base_user_name__,'用户的id为:', root_id)
 
     # 影人数据 
-    fieldRole = get_field_role(root_id, 904)
-    fieldRole['Overview'] = '新的表述信息'
-    set_field_role(904, json.dumps(fieldRole, ensure_ascii=False))
-    exit(0)
+    fieldRole = get_field_role(904)
+    if fieldRole:
+        logger('获取影人', fieldRole['Name'], '(904)的资料:', fieldRole)
+        fieldRole['Overview'] = '新的描述信息'
+        '''
+        if set_field_role(904, json.dumps(fieldRole, ensure_ascii=False)):
+            logger('已修改该影人描述为"新的描述信息"')
+        '''
 
     # 遍历媒体库 
-    for item in get_media_library(root_id):
+    logger("测试遍历媒体库")
+    for item in get_media_library():
         # 遍历影片 
-        for media in get_media_items(item['id'], root_id):
+        logger("当前媒体库为:", item['Name'])
+        for media in get_media_items(item['Id']):
             #####################################
             # 影片详情 
             #####################################
-            mediaDetail = get_media_details(media['id'], root_id)
+            logger(item['Name'], '媒体库中的媒体', media['Name'])
+            mediaDetail = get_media_details(media['Id'])
+            logger('获取到资料为', mediaDetail)
             ## 修改影片信息
-            '''
-            mediaDetail['LockData'] = True
+            mediaDetail['LockData'] = False
             mediaDetail['LockedFields'] = ["Name","OriginalTitle","SortName","CommunityRating","CriticRating","Tagline","Overview","OfficialRating","Genres","Studios","Tags"]
             mediaDetail['DateCreated'] = '2021-11-24T07:19:46.0000000Z' # '2022-11-24T07:19:46.0000000Z' 
-            set_media_details(media['id'], json.dumps(mediaDetail, ensure_ascii=False)) # 这边不能编码成ascii,服务器不认 
+            logger('修改媒体创建时间')
+            '''
+            if set_media_details(media['Id'], json.dumps(mediaDetail, ensure_ascii=False)): # 这边不能编码成ascii,服务器不认 
+                logger('修改媒体创建时间并解锁媒体项目成功')
             '''
 
             #####################################
             # 影片图片 
             #####################################
-            for item in get_item_images(media['id']):
-                print(item) 
+            logger('该影片当前包含图片:', )
+            for item in get_item_images(media['Id']):
+                print(item + ',', end='') 
+            print('')
             # 上传新的封面图 
-            # set_item_image(media['id'], 'Primary', 'D:\\p2697676764.jpg')
+            '''
+            set_item_image(media['Id'], 'Primary', 'D:\\p2697676764.jpg') 
+            '''
             exit(0)
