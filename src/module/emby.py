@@ -87,9 +87,9 @@ def get_media_library():
             mediaInfo['Name'] = jvItem['Name']
             mediaInfo['Id'] = jvItem['Id']
             if 'CollectionType' in jvItem and jvItem['CollectionType'] == 'movies':
-                mediaInfo['movie'] = True
+                mediaInfo['Movie'] = True
             else:
-                mediaInfo['movie'] = False
+                mediaInfo['Movie'] = False
             LibraryList.append(mediaInfo)
     return LibraryList
 
@@ -116,6 +116,7 @@ def get_media_items(libraryId):
             mediaInfo = {}
             mediaInfo['Name'] = item['Name']
             mediaInfo['Id'] = item['Id']
+            mediaInfo['Type'] = item['Type']
             mediaList.append(mediaInfo)
         # 没满50个,说明已经到尾了 
         if jvData['TotalRecordCount'] < 50:
@@ -252,8 +253,11 @@ def get_field_role(roleId):
     '''
     fieldRole = {}
     userId = __get_userId__()
-    req_url = '{0}/emby/Users/{1}/Items/{2}?Fields=ChannelMappingInfo&api_key={3}'.format(__host_name__, userId, roleId, __api_key__)
-    jsonStr = get_html(req_url)
+    try:
+        req_url = '{0}/emby/Users/{1}/Items/{2}?Fields=ChannelMappingInfo&api_key={3}'.format(__host_name__, userId, roleId, __api_key__)
+        jsonStr = get_html(req_url)
+    except:
+        return None
     if jsonStr:
         jvData = json.loads(jsonStr)
         fieldRole['Id'] = jvData['Id'] if 'Id' in jvData else '' # 

@@ -40,9 +40,9 @@ def _http_request(url, data = None, post = False, headers = http_headers):
         http = requests.session()
         http.keep_alive = False
         if post:
-            r = http.post(url, timeout=3, headers=headers, data=data, verify=False)
+            r = http.post(url, timeout=(5, 10), headers=headers, data=data, verify=False)
         else:
-            r = http.get(url, timeout=3, headers=headers, verify=False)
+            r = http.get(url, timeout=(5, 10), headers=headers, verify=False)
         # 设置网页编码
         r.encoding = get_encoding(r.text)
         # 记录cookie
