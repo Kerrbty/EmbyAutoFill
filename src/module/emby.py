@@ -181,12 +181,13 @@ def set_media_details(mediaId, jsonStr):
         return False
 
 
-def get_media_images(mediaId):
+def get_item_images(itemId):
     '''
     获取当前影视/影人已经设置的图片类型列表 
+    itemId 为 mediaId 或者 roleId
     '''
     imageList = []
-    req_url = '{0}/emby/Items/{1}/Images?api_key={2}'.format(host_name, mediaId, api_key)
+    req_url = '{0}/emby/Items/{1}/Images?api_key={2}'.format(host_name, itemId, api_key)
     jsonStr = get_html(req_url)
     if jsonStr:
         jvData = json.loads(jsonStr)
@@ -195,10 +196,11 @@ def get_media_images(mediaId):
     return imageList
 
 
-def set_media_image(mediaId, imageType, filePath):
+def set_item_image(itemId, imageType, filePath):
     '''
     上传影视/影人图片 
     imageType 取值: Primary(封面图)/ Banner(横幅)/ Logo(标识)/ Thumb(缩略图)/ Disc(光盘)/ Art(艺术图)/Backdrop(背景图) 
+    itemId 为 mediaId 或者 roleId
     '''
     if not os.path.exists(filePath):
         return False
@@ -209,7 +211,7 @@ def set_media_image(mediaId, imageType, filePath):
         return False
     image_b64 = base64.b64encode(image_data)
     # 上传图片 
-    req_url = '{0}/emby/Items/{1}/Images/{2}?api_key={3}'.format(host_name, mediaId, imageType, api_key)
+    req_url = '{0}/emby/Items/{1}/Images/{2}?api_key={3}'.format(host_name, itemId, imageType, api_key)
     ret_data = post_html(url=req_url, data=image_b64, retry=1, headers=image_headers)
     if ret_data == '':
         return True
@@ -320,9 +322,8 @@ if __name__=="__main__":
             #####################################
             # 影片图片 
             #####################################
-            for item in get_media_images(media['id']):
+            for item in get_item_images(media['id']):
                 print(item) 
             # 上传新的封面图 
-            # set_media_image(media['id'], 'Primary', 'D:\\p2697676764.jpg')
+            # set_item_image(media['id'], 'Primary', 'D:\\p2697676764.jpg')
             exit(0)
-    
