@@ -233,20 +233,30 @@ def _get_author(html):
 def _get_actors(html):
     roteList = []
     actors = re.findall(r'"actor":\s+\[([^\x5d]*?)\]', html)
+    indexCount = 10
     if len(actors)>0:
         name_list = re.findall(r'"name": "(.*?)"', actors[0])
         roteid_list = re.findall(r'/celebrity/(\d+)/', actors[0])
         for index in range(len(name_list)):
+            indexCount = indexCount -1
+            if indexCount == 0:
+                break
             roteList.append({'Name':roteid_list[index], 'Type':'Actor'})
         return roteList
     actor_list = re.findall(r'property="video:actor" content="(.*?)"', html)
     if len(actor_list)>0:
         for name in actor_list:
+            indexCount = indexCount -1
+            if indexCount == 0:
+                break
             roteList.append({'Name':name, 'Type':'Actor'})
         return roteList 
     starring_list = re.findall(r'href="/celebrity/(/d)/" rel="v:starring">(.*?)</a>', html)
     if len(starring_list)>0:
         for id, name in starring_list:
+            indexCount = indexCount -1
+            if indexCount == 0:
+                break
             roteList.append({'Name':id, 'Type':'Actor'})
         return roteList 
     return roteList
