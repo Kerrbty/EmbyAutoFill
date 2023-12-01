@@ -233,7 +233,7 @@ def _get_author(html):
 def _get_actors(html):
     roteList = []
     actors = re.findall(r'"actor":\s+\[([^\x5d]*?)\]', html)
-    indexCount = 10
+    indexCount = 7
     if len(actors)>0:
         name_list = re.findall(r'"name": "(.*?)"', actors[0])
         roteid_list = re.findall(r'/celebrity/(\d+)/', actors[0])
