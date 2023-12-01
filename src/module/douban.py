@@ -60,6 +60,27 @@ def get_name_year(html):
     year = year.replace('２', '2').replace('１', '1').replace('０', '0')
     return title, int(year)
 
+def get_celebrity_name(html):
+    html = html.replace('\r', '').replace('\n', '')
+    hideTitles = re.findall(r'name="title" value="(.*?)">', html)
+    if len(hideTitles)>0:
+        return hideTitles[0].strip()
+    dataTitles = re.findall(r'data-title="(.*?)"', html)
+    if len(dataTitles)>0:
+        return dataTitles[-1].strip()
+    titles = re.findall(r'<title>(.*?)</title>', html)
+    if len(titles)>0:
+        return titles[0].strip()
+    strongs = re.findall(r'<h1>(.*?)</h1>', html)
+    if len(strongs)>0:
+        return strongs[0].strip()
+
+def get_short_celebrity_name(html):
+    ogtitle = re.findall(r'property="og:title" content="(.*?)"', html)
+    if len(ogtitle)>0:
+        return ogtitle[0].strip()
+    return get_celebrity_name(html)
+
 # 获取电影别名 
 def get_alias(html):
     aliasList = []
@@ -82,12 +103,27 @@ def get_poster(html):
         poster = image_list[0]
         return poster.replace('s_ratio_poster', 'l')
     return ''
+def get_poster2(html):
+    poster_list = re.findall(r'property="og:image" content="(.*?)"', html)
+    if len(poster_list)>0:
+        poster = poster_list[0]
+        return poster.replace('s_ratio_poster', 'l')
+    image_list = re.findall(r'data-picture="(.*?)"', html)
+    if len(image_list)>0:
+        poster = image_list[0]
+        return poster.replace('s_ratio_poster', 'l')
+    return ''
 
 # IMDb id 
 def get_imdb(html):
     imbi_list = re.findall(r'IMDb:</span>(.*?)<br>', html)
     if len(imbi_list)>0:
         return imbi_list[0].strip()
+    return ''
+def get_imdb2(html):
+    imdblist = re.findall(r'https://www\.imdb\.com/name/(.*?)"', html)
+    if len(imdblist)>0:
+        return imdblist[0]
     return ''
 
 # 上映日期 
@@ -130,6 +166,12 @@ def get_counrty(html):
     if len(country_list)>0:
         return [country_list[0].strip()]
     return ['']
+def get_birth(html):
+    pagehtml = html.replace('\r', '').replace('\n', '').replace(' ', '')
+    birth_place = re.findall(r'<span>出生地</span>:(.*?)</li>', pagehtml)
+    if len(birth_place) > 0:
+        return birth_place[0].split('，')
+    return []
 
 # 类型风格 
 def get_genres(html):
@@ -148,6 +190,14 @@ def get_tags(html):
     if len(language_list)>0:
         tagsList.append(language_list[0].strip())
     return tagsList
+def get_tags2(html):
+    tagsList = []
+    pagehtml = html.replace('\r', '').replace('\n', '').replace(' ', '')
+    jobs_list = re.findall(r'<span>职业</span>:([\w/]+)</li>', pagehtml)
+    if len(jobs_list)>0:
+        for i in jobs_list[0].split('/'):
+            tagsList.append(i.strip())
+    return tagsList
 
 # 演员列表 
 def _get_director(html):
@@ -155,18 +205,19 @@ def _get_director(html):
     directors = re.findall(r'"director":\s+\[([^\x5d]*?)\]', html)
     if len(directors)>0:
         name_list = re.findall(r'"name": "(.*?)"', directors[0])
-        for name in name_list:
-            roteList.append({'Name':name, 'Type':'Director'})
+        roteid_list = re.findall(r'/celebrity/(\d+)/', directors[0])
+        for index in range(len(name_list)):
+            roteList.append({'Name':roteid_list[index], 'Type':'Director'})
         return roteList
     director_list = re.findall(r'property="video:director" content="(.*?)"', html)
     if len(director_list)>0:
         for name in director_list:
             roteList.append({'Name':name, 'Type':'Director'})
         return roteList 
-    directedBy_list = re.findall(r'rel="v:directedBy">(.*?)</a>', html)
+    directedBy_list = re.findall(r'href="/celebrity/(\d+)/" rel="v:directedBy">(.*?)</a>', html)
     if len(directedBy_list)>0:
-        for name in directedBy_list:
-            roteList.append({'Name':name, 'Type':'Director'})
+        for id, name in directedBy_list:
+            roteList.append({'Name':id, 'Type':'Director'})
         return roteList 
     return roteList
 def _get_author(html):
@@ -174,8 +225,9 @@ def _get_author(html):
     directors = re.findall(r'"author":\s+\[([^\x5d]*?)\]', html)
     if len(directors)>0:
         name_list = re.findall(r'"name": "(.*?)"', directors[0])
-        for name in name_list:
-            roteList.append({'Name':name, 'Type':'Writer'})
+        roteid_list = re.findall(r'/celebrity/(\d+)/', directors[0])
+        for index in range(len(name_list)):
+            roteList.append({'Name':roteid_list[index], 'Type':'Writer'})
         return roteList
     return roteList
 def _get_actors(html):
@@ -183,18 +235,19 @@ def _get_actors(html):
     actors = re.findall(r'"actor":\s+\[([^\x5d]*?)\]', html)
     if len(actors)>0:
         name_list = re.findall(r'"name": "(.*?)"', actors[0])
-        for name in name_list:
-            roteList.append({'Name':name, 'Type':'Actor'})
+        roteid_list = re.findall(r'/celebrity/(\d+)/', actors[0])
+        for index in range(len(name_list)):
+            roteList.append({'Name':roteid_list[index], 'Type':'Actor'})
         return roteList
     actor_list = re.findall(r'property="video:actor" content="(.*?)"', html)
     if len(actor_list)>0:
         for name in actor_list:
             roteList.append({'Name':name, 'Type':'Actor'})
         return roteList 
-    starring_list = re.findall(r'rel="v:starring">(.*?)</a>', html)
+    starring_list = re.findall(r'href="/celebrity/(/d)/" rel="v:starring">(.*?)</a>', html)
     if len(starring_list)>0:
-        for name in starring_list:
-            roteList.append({'Name':name, 'Type':'Actor'})
+        for id, name in starring_list:
+            roteList.append({'Name':id, 'Type':'Actor'})
         return roteList 
     return roteList
 def get_rotes(html):
@@ -216,7 +269,7 @@ def __get_descript__(html):
     descripts2 = re.findall(r'"description": ".*?",', html)
     if len(descripts2)>0:
         return descripts2[0]
-    descripts3 = re.findall(r'property="og:description" content=".*?"', html)
+    descripts3 = re.findall(r'property="og:description" content="([\w|\W]*?)"', html)
     if len(descripts3)>0:
         return descripts3[0]
 def get_descript(html):
@@ -352,7 +405,7 @@ def update_media_with_douban(mediaInfo, imageList = None, updateFunc = None, for
         mediaInfo['TagItems'].append({'Name': tag})
     mediaInfo['PremiereDate'] = get_date(pagehtml)
     mediaInfo['ProductionYear'] = rYear
-    mediaInfo['People'] = get_rotes(pagehtml)
+    mediaInfo['People'] = get_rotes(pagehtml) # 角色先用需要编码，后面再更新 
     mediaInfo['ProviderIds']['Imdb'] = get_imdb(pagehtml)
     mediaInfo['ProviderIds']['DoubanID'] = doubanId
     mediaInfo['LockData'] = True
@@ -360,30 +413,52 @@ def update_media_with_douban(mediaInfo, imageList = None, updateFunc = None, for
     poster_img = get_poster(pagehtml)
     if forceUpdate or not imageList or not 'Primary' in imageList:
         if updateFunc:
-            print(poster_img)
             imgbin = get_content(poster_img, http_headers)
             updateFunc(mediaInfo['Id'], 'Primary', imgbin)
     return True
 
 
 def update_role_with_douban(roleInfo, imageList = None, updateFunc = None, forceUpdate = False):
+    if re.match(r'\d+', roleInfo['Name']):
+        roleId = roleInfo['Name']
+        role_url = 'https://movie.douban.com/celebrity/{}/'.format(roleId)
+        cached_file_name = os.path.join(html_tmp_path, 'celebrity_'+str(roleId)+'.html')
+        pagehtml,jmp_id = get_page(role_url, cached_file_name)
+        logger(role_url)
+        if pagehtml:
+            roleInfo['Name'] = get_celebrity_name(pagehtml)
+            roleInfo['SortName'] = roleInfo['ForcedSortName'] = get_short_celebrity_name(pagehtml)
+            roleInfo['Overview'] = get_descript(pagehtml)
+            roleInfo['ProviderIds']['Imdb'] = get_imdb2(pagehtml)
+            roleInfo['ProviderIds']['Tvdb'] = str(roleId) # tvdb 存下豆瓣id 
+            roleInfo['Tags'] = get_tags2(pagehtml)
+            roleInfo['TagItems'] = []
+            for tag in roleInfo['Tags']:
+                roleInfo['TagItems'].append({'Name': tag})
+            roleInfo['ProductionLocations'] = get_birth(pagehtml)
+            roleInfo['LockData'] = True
+            roleInfo['LockedFields'] = ["Name", "SortName", "Overview", "Tags"]
+            poster_img = get_poster2(pagehtml)
+            if forceUpdate or not imageList or not 'Primary' in imageList:
+                if updateFunc:
+                    imgbin = get_content(poster_img, http_headers)
+                    updateFunc(roleId, 'Primary', imgbin)
+            return True
     return False
 
 
+
 if __name__=="__main__":
-    id = 4922787
-    
-    # print(get_descript(pagehtml)) # Overview
-    # print(get_rotes(pagehtml)) # People 
-    # print(get_genres(pagehtml)) # Genres 
-    # print(get_rating(pagehtml)) # CommunityRating 
-    # print(get_date(pagehtml)) # PremiereDate  # ProductionYear
-    # print(get_imdb(pagehtml)) # ProviderIds['Imdb'] ProviderIds['DoubanID']
-    # print(get_poster(pagehtml)) # 封面图 
-    # print(get_alias(pagehtml)[0]) # ForcedSortName / SortName 
-    name, year = get_name_year(pagehtml) # Name / ProductionYear
-    print(name)
-    # OriginalTitle filename 
-    print(get_tags(pagehtml)) # Tags / TagItems 
-    # LockData = true 
-    # LockedFields = ["Name","OriginalTitle","SortName","CommunityRating","CriticRating","Tagline","Overview","OfficialRating","Genres","Studios","Tags"] 
+    doubanId = 1321964
+    movie_url = 'https://movie.douban.com/celebrity/{}/'.format(doubanId)
+    cached_file_name = os.path.join(html_tmp_path, 'celebrity_'+str(doubanId)+'.html')
+    pagehtml,jmp_id = get_page(movie_url, cached_file_name)
+
+    # print(get_tags2(pagehtml)) # Tags / TagItems 
+    # print(get_birth(pagehtml)) # ProductionLocations
+    # print(get_imdb2(pagehtml)) # ProviderIds['Imdb']
+    # print(get_descript(pagehtml)) # Overview 
+    print(get_celebrity_name(pagehtml)) # Name 
+    print(get_short_celebrity_name(pagehtml)) # SortName /ForcedSortName 
+    print(get_poster2(pagehtml))
+
