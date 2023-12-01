@@ -413,6 +413,7 @@ def update_media_with_douban(mediaInfo, imageList = None, updateFunc = None, for
     poster_img = get_poster(pagehtml)
     if forceUpdate or not imageList or not 'Primary' in imageList:
         if updateFunc:
+            logger('upload', poster_img)
             imgbin = get_content(poster_img, http_headers)
             updateFunc(mediaInfo['Id'], 'Primary', imgbin)
     return True
@@ -441,8 +442,9 @@ def update_role_with_douban(roleInfo, imageList = None, updateFunc = None, force
             poster_img = get_poster2(pagehtml)
             if forceUpdate or not imageList or not 'Primary' in imageList:
                 if updateFunc:
+                    logger('upload', poster_img)
                     imgbin = get_content(poster_img, http_headers)
-                    updateFunc(roleId, 'Primary', imgbin)
+                    updateFunc(roleInfo['Id'], 'Primary', imgbin)
             return True
     return False
 

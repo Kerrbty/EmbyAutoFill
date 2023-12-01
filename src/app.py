@@ -59,7 +59,7 @@ def update_role_info(roleId, forceUpdate = False):
 def update_all():
     for media in enum_all_media():
         logger('正在更新影片:', media['Name'], ', Id:', media['Id'], 'Type:', media["Type"])
-        update_media_info(media['Id'], True)
+        update_media_info(media['Id'])
         logger('开始遍历更新该影片的演员列表...')
         for role in enum_media_role(media['Id']):
             logger('正在更新影人:', role['Name'], ', Id:', role['Id'], 'Type:', role["Type"])
