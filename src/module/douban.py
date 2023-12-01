@@ -208,25 +208,32 @@ def _get_director(html):
         roteid_list = re.findall(r'/celebrity/(\d+)/', directors[0])
         for index in range(len(name_list)):
             roteList.append({'Name':roteid_list[index], 'Type':'Director'})
+            break
         return roteList
     director_list = re.findall(r'property="video:director" content="(.*?)"', html)
     if len(director_list)>0:
         for name in director_list:
             roteList.append({'Name':name, 'Type':'Director'})
+            break
         return roteList 
     directedBy_list = re.findall(r'href="/celebrity/(\d+)/" rel="v:directedBy">(.*?)</a>', html)
     if len(directedBy_list)>0:
         for id, name in directedBy_list:
             roteList.append({'Name':id, 'Type':'Director'})
+            break
         return roteList 
     return roteList
 def _get_author(html):
     roteList = []
+    indexCount = 3
     directors = re.findall(r'"author":\s+\[([^\x5d]*?)\]', html)
     if len(directors)>0:
         name_list = re.findall(r'"name": "(.*?)"', directors[0])
         roteid_list = re.findall(r'/celebrity/(\d+)/', directors[0])
         for index in range(len(name_list)):
+            indexCount = indexCount - 1
+            if indexCount == 0:
+                break
             roteList.append({'Name':roteid_list[index], 'Type':'Writer'})
         return roteList
     return roteList
