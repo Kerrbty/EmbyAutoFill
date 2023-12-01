@@ -78,20 +78,20 @@ def post_html(url, data=None, retry = 3, headers = http_headers):
         times = times+1
     return html
 
-def _get_content(url):
+def _get_content(url, headers = http_headers):
     try:
         http = requests.session()
         http.keep_alive = False
-        data = http.get(url, timeout=3, headers=http_headers, verify=False)
+        data = http.get(url, timeout=3, headers=headers, verify=False)
         return data.content
     except:
         return None
 
 # 获取远程二进制数据(下载文件等) 
-def get_content(url):
+def get_content(url, headers = http_headers):
     count = 0
     while True:
-        data = _get_content(url)
+        data = _get_content(url, headers = headers)
         if data:
             break
         count = count + 1

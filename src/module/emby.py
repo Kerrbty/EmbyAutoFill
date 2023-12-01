@@ -10,7 +10,7 @@ import yaml
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.abspath(os.path.join(cur_dir, '..'))
 sys.path.append(root_dir)
-from module.comm import logger, get_html, post_html, get_content
+from module.comm import logger, get_html, post_html
 
 #####################################################
 # 全局数据区 
@@ -182,6 +182,8 @@ def get_media_details(mediaId):
         # 标题和类标题不能为空的 
         if mediaDetails['Name'] == '':
             mediaDetails['Name'] = jvData['FileName']
+        if mediaDetails['OriginalTitle'] == '':
+            mediaDetails['OriginalTitle'] = jvData['FileName']
         if mediaDetails['ForcedSortName'] == '':
             mediaDetails['ForcedSortName'] = jvData['FileName']
         if mediaDetails['SortName'] == '':
@@ -227,6 +229,23 @@ def set_item_image(itemId, imageType, filePath):
     image_data = None
     with open(filePath, 'rb') as fp:
         image_data = fp.read()
+    if not image_data:
+        return False
+    image_b64 = base64.b64encode(image_data)
+    # 上传图片 
+    req_url = '{0}/emby/Items/{1}/Images/{2}?api_key={3}'.format(__host_name__, itemId, imageType, __api_key__)
+    ret_data = post_html(url=req_url, data=image_b64, retry=1, headers=image_headers)
+    if ret_data == '':
+        return True
+    if ret_data == None:
+        return False
+
+def set_item_image_raw(itemId, imageType, image_data):
+    '''
+    上传影视/影人图片 
+    imageType 取值: Primary(封面图)/ Banner(横幅)/ Logo(标识)/ Thumb(缩略图)/ Disc(光盘)/ Art(艺术图)/Backdrop(背景图) 
+    itemId 为 mediaId 或者 roleId
+    '''
     if not image_data:
         return False
     image_b64 = base64.b64encode(image_data)
