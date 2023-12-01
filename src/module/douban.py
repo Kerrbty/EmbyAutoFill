@@ -290,7 +290,7 @@ def __get_descript__(html):
     if len(descripts3)>0:
         return descripts3[0]
 def get_descript(html):
-    desp = __get_descript__(html)
+    desp = '&emsp;&emsp;' + __get_descript__(html)
     return desp.replace('  ', '&emsp;').replace('"', '&quot;')
 
 # 从缓存或者网上更新页面(抛出异常表示禁止访问，IP被限制) 
