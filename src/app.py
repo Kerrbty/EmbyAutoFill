@@ -43,7 +43,9 @@ def update_media_info(mediaId, forceUpdate = False):
 
 def update_role_info(roleId, forceUpdate = False):
     fieldRole = get_field_role(roleId)
-    if not fieldRole and not forceUpdate and fieldRole['LockData']:
+    if not fieldRole:
+        return 2
+    if not forceUpdate and fieldRole['LockData']:
         # 项目已被锁,且不强制更新的情况 
         return 1
     imageList = get_item_images(roleId)
