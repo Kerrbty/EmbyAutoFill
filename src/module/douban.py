@@ -425,7 +425,7 @@ def update_media_with_douban(mediaInfo, imageList = None, updateFunc = None, for
             mediaInfo['TagItems'].append({'Name': tag})
     mediaInfo['PremiereDate'] = get_date(pagehtml)
     mediaInfo['ProductionYear'] = rYear
-    if len(mediaInfo['People'])>0:
+    if len(mediaInfo['People']) == 0:
         mediaInfo['People'] = get_rotes(pagehtml) # 角色先用需要编码，后面再更新 
     mediaInfo['ProviderIds']['Imdb'] = get_imdb(pagehtml)
     mediaInfo['ProviderIds']['DoubanID'] = doubanId
@@ -453,7 +453,7 @@ def update_role_with_douban(roleInfo, imageList = None, updateFunc = None, force
             roleInfo['Overview'] = get_descript(pagehtml)
             roleInfo['ProviderIds']['Imdb'] = get_imdb2(pagehtml)
             roleInfo['ProviderIds']['Tvdb'] = str(roleId) # tvdb 存下豆瓣id 
-            if len(roleInfo['Tags'])>0:
+            if len(roleInfo['Tags']) == 0:
                 roleInfo['Tags'] = get_tags2(pagehtml)
                 roleInfo['TagItems'] = []
                 for tag in roleInfo['Tags']:
