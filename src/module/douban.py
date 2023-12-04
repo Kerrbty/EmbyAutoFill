@@ -413,16 +413,20 @@ def update_media_with_douban(mediaInfo, imageList = None, updateFunc = None, for
     rName, rYear = get_name_year(pagehtml)
     mediaInfo['Name'] = rName
     mediaInfo['ForcedSortName'] = mediaInfo['SortName'] = get_alias(pagehtml)[0]
-    mediaInfo['CommunityRating'] = get_rating(pagehtml)
+    if mediaInfo['CommunityRating'] == '':
+        mediaInfo['CommunityRating'] = get_rating(pagehtml)
     mediaInfo['Overview'] = get_descript(pagehtml)
-    mediaInfo['Genres'] = get_genres(pagehtml)
-    mediaInfo['Tags'] = get_tags(pagehtml)
-    mediaInfo['TagItems'] = []
-    for tag in mediaInfo['Tags']:
-        mediaInfo['TagItems'].append({'Name': tag})
+    if len(mediaInfo['Genres']) == 0:
+        mediaInfo['Genres'] = get_genres(pagehtml)
+    if len(mediaInfo['Tags']) == 0:
+        mediaInfo['Tags'] = get_tags(pagehtml)
+        mediaInfo['TagItems'] = []
+        for tag in mediaInfo['Tags']:
+            mediaInfo['TagItems'].append({'Name': tag})
     mediaInfo['PremiereDate'] = get_date(pagehtml)
     mediaInfo['ProductionYear'] = rYear
-    mediaInfo['People'] = get_rotes(pagehtml) # 角色先用需要编码，后面再更新 
+    if len(mediaInfo['People'])>0:
+        mediaInfo['People'] = get_rotes(pagehtml) # 角色先用需要编码，后面再更新 
     mediaInfo['ProviderIds']['Imdb'] = get_imdb(pagehtml)
     mediaInfo['ProviderIds']['DoubanID'] = doubanId
     mediaInfo['LockData'] = True
@@ -449,10 +453,11 @@ def update_role_with_douban(roleInfo, imageList = None, updateFunc = None, force
             roleInfo['Overview'] = get_descript(pagehtml)
             roleInfo['ProviderIds']['Imdb'] = get_imdb2(pagehtml)
             roleInfo['ProviderIds']['Tvdb'] = str(roleId) # tvdb 存下豆瓣id 
-            roleInfo['Tags'] = get_tags2(pagehtml)
-            roleInfo['TagItems'] = []
-            for tag in roleInfo['Tags']:
-                roleInfo['TagItems'].append({'Name': tag})
+            if len(roleInfo['Tags'])>0:
+                roleInfo['Tags'] = get_tags2(pagehtml)
+                roleInfo['TagItems'] = []
+                for tag in roleInfo['Tags']:
+                    roleInfo['TagItems'].append({'Name': tag})
             roleInfo['ProductionLocations'] = get_birth(pagehtml)
             roleInfo['LockData'] = True
             roleInfo['LockedFields'] = ["Name", "SortName", "Overview", "Tags"]
